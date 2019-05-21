@@ -17,20 +17,19 @@
 package jose
 
 import (
-	"crypto"
 	"crypto/aes"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha1"
-	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/insolar/x-crypto"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
+	"github.com/insolar/x-crypto/sha1"
+	"github.com/insolar/x-crypto/sha256"
 	"math/big"
 
-	"golang.org/x/crypto/ed25519"
-	josecipher "gopkg.in/square/go-jose.v2/cipher"
-	"gopkg.in/square/go-jose.v2/json"
+	"github.com/go-jose/cipher"
+	"github.com/go-jose/json"
 )
 
 // A generic RSA-based encrypter/verifier
@@ -48,10 +47,6 @@ type ecEncrypterVerifier struct {
 	publicKey *ecdsa.PublicKey
 }
 
-type edEncrypterVerifier struct {
-	publicKey ed25519.PublicKey
-}
-
 // A key generator for ECDH-ES
 type ecKeyGenerator struct {
 	size      int
@@ -62,10 +57,6 @@ type ecKeyGenerator struct {
 // A generic EC-based decrypter/signer
 type ecDecrypterSigner struct {
 	privateKey *ecdsa.PrivateKey
-}
-
-type edDecrypterSigner struct {
-	privateKey ed25519.PrivateKey
 }
 
 // newRSARecipient creates recipientKeyInfo based on the given key.
@@ -113,25 +104,6 @@ func newRSASigner(sigAlg SignatureAlgorithm, privateKey *rsa.PrivateKey) (recipi
 	}, nil
 }
 
-func newEd25519Signer(sigAlg SignatureAlgorithm, privateKey ed25519.PrivateKey) (recipientSigInfo, error) {
-	if sigAlg != EdDSA {
-		return recipientSigInfo{}, ErrUnsupportedAlgorithm
-	}
-
-	if privateKey == nil {
-		return recipientSigInfo{}, errors.New("invalid private key")
-	}
-	return recipientSigInfo{
-		sigAlg: sigAlg,
-		publicKey: staticPublicKey(&JSONWebKey{
-			Key: privateKey.Public(),
-		}),
-		signer: &edDecrypterSigner{
-			privateKey: privateKey,
-		},
-	}, nil
-}
-
 // newECDHRecipient creates recipientKeyInfo based on the given key.
 func newECDHRecipient(keyAlg KeyAlgorithm, publicKey *ecdsa.PublicKey) (recipientKeyInfo, error) {
 	// Verify that key management algorithm is supported by this encrypter
@@ -157,7 +129,7 @@ func newECDHRecipient(keyAlg KeyAlgorithm, publicKey *ecdsa.PublicKey) (recipien
 func newECDSASigner(sigAlg SignatureAlgorithm, privateKey *ecdsa.PrivateKey) (recipientSigInfo, error) {
 	// Verify that key management algorithm is supported by this encrypter
 	switch sigAlg {
-	case ES256, ES384, ES512:
+	case ES256, ES256K, ES384, ES512:
 	default:
 		return recipientSigInfo{}, ErrUnsupportedAlgorithm
 	}
@@ -467,33 +439,6 @@ func (ctx ecDecrypterSigner) decryptKey(headers rawHeader, recipient *recipientI
 	return josecipher.KeyUnwrap(block, recipient.encryptedKey)
 }
 
-func (ctx edDecrypterSigner) signPayload(payload []byte, alg SignatureAlgorithm) (Signature, error) {
-	if alg != EdDSA {
-		return Signature{}, ErrUnsupportedAlgorithm
-	}
-
-	sig, err := ctx.privateKey.Sign(RandReader, payload, crypto.Hash(0))
-	if err != nil {
-		return Signature{}, err
-	}
-
-	return Signature{
-		Signature: sig,
-		protected: &rawHeader{},
-	}, nil
-}
-
-func (ctx edEncrypterVerifier) verifyPayload(payload []byte, signature []byte, alg SignatureAlgorithm) error {
-	if alg != EdDSA {
-		return ErrUnsupportedAlgorithm
-	}
-	ok := ed25519.Verify(ctx.publicKey, payload, signature)
-	if !ok {
-		return errors.New("square/go-jose: ed25519 signature failed to verify")
-	}
-	return nil
-}
-
 // Sign the given payload
 func (ctx ecDecrypterSigner) signPayload(payload []byte, alg SignatureAlgorithm) (Signature, error) {
 	var expectedBitSize int
@@ -501,6 +446,9 @@ func (ctx ecDecrypterSigner) signPayload(payload []byte, alg SignatureAlgorithm)
 
 	switch alg {
 	case ES256:
+		expectedBitSize = 256
+		hash = crypto.SHA256
+	case ES256K:
 		expectedBitSize = 256
 		hash = crypto.SHA256
 	case ES384:
@@ -558,6 +506,9 @@ func (ctx ecEncrypterVerifier) verifyPayload(payload []byte, signature []byte, a
 
 	switch alg {
 	case ES256:
+		keySize = 32
+		hash = crypto.SHA256
+	case ES256K:
 		keySize = 32
 		hash = crypto.SHA256
 	case ES384:

@@ -17,13 +17,13 @@
 package jose
 
 import (
-	"crypto/elliptic"
-	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/x509"
 
-	"gopkg.in/square/go-jose.v2/json"
+	"github.com/go-jose/json"
 )
 
 // KeyAlgorithm represents a key management algorithm.
@@ -75,7 +75,6 @@ var (
 
 // Key management algorithms
 const (
-	ED25519            = KeyAlgorithm("ED25519")
 	RSA1_5             = KeyAlgorithm("RSA1_5")             // RSA-PKCS1v1.5
 	RSA_OAEP           = KeyAlgorithm("RSA-OAEP")           // RSA-OAEP-SHA1
 	RSA_OAEP_256       = KeyAlgorithm("RSA-OAEP-256")       // RSA-OAEP-SHA256
@@ -97,19 +96,19 @@ const (
 
 // Signature algorithms
 const (
-	EdDSA = SignatureAlgorithm("EdDSA")
-	HS256 = SignatureAlgorithm("HS256") // HMAC using SHA-256
-	HS384 = SignatureAlgorithm("HS384") // HMAC using SHA-384
-	HS512 = SignatureAlgorithm("HS512") // HMAC using SHA-512
-	RS256 = SignatureAlgorithm("RS256") // RSASSA-PKCS-v1.5 using SHA-256
-	RS384 = SignatureAlgorithm("RS384") // RSASSA-PKCS-v1.5 using SHA-384
-	RS512 = SignatureAlgorithm("RS512") // RSASSA-PKCS-v1.5 using SHA-512
-	ES256 = SignatureAlgorithm("ES256") // ECDSA using P-256 and SHA-256
-	ES384 = SignatureAlgorithm("ES384") // ECDSA using P-384 and SHA-384
-	ES512 = SignatureAlgorithm("ES512") // ECDSA using P-521 and SHA-512
-	PS256 = SignatureAlgorithm("PS256") // RSASSA-PSS using SHA256 and MGF1-SHA256
-	PS384 = SignatureAlgorithm("PS384") // RSASSA-PSS using SHA384 and MGF1-SHA384
-	PS512 = SignatureAlgorithm("PS512") // RSASSA-PSS using SHA512 and MGF1-SHA512
+	HS256  = SignatureAlgorithm("HS256")  // HMAC using SHA-256
+	HS384  = SignatureAlgorithm("HS384")  // HMAC using SHA-384
+	HS512  = SignatureAlgorithm("HS512")  // HMAC using SHA-512
+	RS256  = SignatureAlgorithm("RS256")  // RSASSA-PKCS-v1.5 using SHA-256
+	RS384  = SignatureAlgorithm("RS384")  // RSASSA-PKCS-v1.5 using SHA-384
+	RS512  = SignatureAlgorithm("RS512")  // RSASSA-PKCS-v1.5 using SHA-512
+	ES256  = SignatureAlgorithm("ES256")  // ECDSA using P-256 and SHA-256
+	ES256K = SignatureAlgorithm("ES256K") // ECDSA using P-256K and SHA-256
+	ES384  = SignatureAlgorithm("ES384")  // ECDSA using P-384 and SHA-384
+	ES512  = SignatureAlgorithm("ES512")  // ECDSA using P-521 and SHA-512
+	PS256  = SignatureAlgorithm("PS256")  // RSASSA-PSS using SHA256 and MGF1-SHA256
+	PS384  = SignatureAlgorithm("PS384")  // RSASSA-PSS using SHA384 and MGF1-SHA384
+	PS512  = SignatureAlgorithm("PS512")  // RSASSA-PSS using SHA512 and MGF1-SHA512
 )
 
 // Content encryption algorithms
@@ -192,21 +191,21 @@ type Header struct {
 // in the x5c header field of a message, if one was present. Returns
 // an error if there was no x5c header present or the chain could
 // not be validated with the given verify options.
-func (h Header) Certificates(opts x509.VerifyOptions) ([][]*x509.Certificate, error) {
-	if len(h.certificates) == 0 {
-		return nil, errors.New("square/go-jose: no x5c header present in message")
-	}
-
-	leaf := h.certificates[0]
-	if opts.Intermediates == nil {
-		opts.Intermediates = x509.NewCertPool()
-		for _, intermediate := range h.certificates[1:] {
-			opts.Intermediates.AddCert(intermediate)
-		}
-	}
-
-	return leaf.Verify(opts)
-}
+//func (h Header) Certificates(opts x509.VerifyOptions) ([][]*x509.Certificate, error) {
+//	if len(h.certificates) == 0 {
+//		return nil, errors.New("square/go-jose: no x5c header present in message")
+//	}
+//
+//	leaf := h.certificates[0]
+//	if opts.Intermediates == nil {
+//		opts.Intermediates = x509.NewCertPool()
+//		for _, intermediate := range h.certificates[1:] {
+//			opts.Intermediates.AddCert(intermediate)
+//		}
+//	}
+//
+//	return leaf.Verify(opts)
+//}
 
 func (parsed rawHeader) set(k HeaderKey, v interface{}) error {
 	b, err := json.Marshal(v)
@@ -491,6 +490,8 @@ func curveName(crv elliptic.Curve) (string, error) {
 	switch crv {
 	case elliptic.P256():
 		return "P-256", nil
+	case elliptic.P256K():
+		return "P-256K", nil
 	case elliptic.P384():
 		return "P-384", nil
 	case elliptic.P521():

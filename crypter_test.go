@@ -18,28 +18,25 @@ package jose
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
 	"io"
 	"math/big"
 	"reflect"
 	"regexp"
 	"testing"
-
-	"golang.org/x/crypto/ed25519"
 )
 
 // We generate only a single RSA and EC key for testing, speeds up tests.
 var rsaTestKey, _ = rsa.GenerateKey(rand.Reader, 2048)
 
 var ecTestKey256, _ = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+var ecTestKey256k, _ = ecdsa.GenerateKey(elliptic.P256K(), rand.Reader)
 var ecTestKey384, _ = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 var ecTestKey521, _ = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-
-var ed25519PublicKey, ed25519PrivateKey, _ = ed25519.GenerateKey(rand.Reader)
 
 func RoundtripJWE(keyAlg KeyAlgorithm, encAlg ContentEncryption, compressionAlg CompressionAlgorithm, serializer func(*JSONWebEncryption) (string, error), corrupter func(*JSONWebEncryption) bool, aad []byte, encryptionKey interface{}, decryptionKey interface{}) error {
 	var rcpt Recipient
@@ -657,6 +654,10 @@ func generateTestKeys(keyAlg KeyAlgorithm, encAlg ContentEncryption) []testKey {
 			{
 				dec: ecTestKey256,
 				enc: &ecTestKey256.PublicKey,
+			},
+			{
+				dec: ecTestKey256k,
+				enc: &ecTestKey256k.PublicKey,
 			},
 			{
 				dec: ecTestKey384,

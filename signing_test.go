@@ -18,15 +18,15 @@ package jose
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/rand"
 	"io"
 	"reflect"
 	"testing"
 
-	"gopkg.in/square/go-jose.v2/json"
+	"github.com/go-jose/json"
 )
 
 type staticNonceSource string
@@ -94,7 +94,7 @@ func RoundtripJWS(sigAlg SignatureAlgorithm, serializer func(*JSONWebSignature) 
 
 func TestRoundtripsJWS(t *testing.T) {
 	// Test matrix
-	sigAlgs := []SignatureAlgorithm{RS256, RS384, RS512, PS256, PS384, PS512, HS256, HS384, HS512, ES256, ES384, ES512, EdDSA}
+	sigAlgs := []SignatureAlgorithm{RS256, RS384, RS512, PS256, PS384, PS512, HS256, HS384, HS512, ES256, ES384, ES512}
 
 	serializers := []func(*JSONWebSignature) (string, error){
 		func(obj *JSONWebSignature) (string, error) { return obj.CompactSerialize() },
@@ -117,7 +117,7 @@ func TestRoundtripsJWS(t *testing.T) {
 
 func TestRoundtripsJWSCorruptSignature(t *testing.T) {
 	// Test matrix
-	sigAlgs := []SignatureAlgorithm{RS256, RS384, RS512, PS256, PS384, PS512, HS256, HS384, HS512, ES256, ES384, ES512, EdDSA}
+	sigAlgs := []SignatureAlgorithm{RS256, RS384, RS512, PS256, PS384, PS512, HS256, HS384, HS512, ES256, ES256K, ES384, ES512}
 
 	serializers := []func(*JSONWebSignature) (string, error){
 		func(obj *JSONWebSignature) (string, error) { return obj.CompactSerialize() },
@@ -181,7 +181,6 @@ func TestSignerWithBrokenRand(t *testing.T) {
 func TestJWSInvalidKey(t *testing.T) {
 	signingKey0, verificationKey0 := GenerateSigningTestKey(RS256)
 	_, verificationKey1 := GenerateSigningTestKey(ES256)
-	_, verificationKey2 := GenerateSigningTestKey(EdDSA)
 
 	signer, err := NewSigner(SigningKey{Algorithm: RS256, Key: signingKey0}, nil)
 	if err != nil {
@@ -202,12 +201,6 @@ func TestJWSInvalidKey(t *testing.T) {
 
 	// Must not work with incorrect key
 	_, err = obj.Verify(verificationKey1)
-	if err == nil {
-		t.Error("verification should fail with incorrect key")
-	}
-
-	// Must not work with incorrect key
-	_, err = obj.Verify(verificationKey2)
 	if err == nil {
 		t.Error("verification should fail with incorrect key")
 	}
@@ -285,9 +278,6 @@ func TestMultiRecipientJWS(t *testing.T) {
 
 func GenerateSigningTestKey(sigAlg SignatureAlgorithm) (sig, ver interface{}) {
 	switch sigAlg {
-	case EdDSA:
-		sig = ed25519PrivateKey
-		ver = ed25519PublicKey
 	case RS256, RS384, RS512, PS256, PS384, PS512:
 		sig = rsaTestKey
 		ver = &rsaTestKey.PublicKey
@@ -296,6 +286,10 @@ func GenerateSigningTestKey(sigAlg SignatureAlgorithm) (sig, ver interface{}) {
 		ver = sig
 	case ES256:
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		sig = key
+		ver = &key.PublicKey
+	case ES256K:
+		key, _ := ecdsa.GenerateKey(elliptic.P256K(), rand.Reader)
 		sig = key
 		ver = &key.PublicKey
 	case ES384:
@@ -451,23 +445,6 @@ func TestEmbedJwk(t *testing.T) {
 	}
 	if jwk2 != nil {
 		t.Error("JWK is set in protected header")
-	}
-}
-
-func TestSignerOptionsEd(t *testing.T) {
-	key, _ := GenerateSigningTestKey(EdDSA)
-	opts := &SignerOptions{
-		EmbedJWK: true,
-	}
-	opts.WithContentType("JWT")
-	opts.WithType("JWT")
-	sig, err := NewSigner(SigningKey{EdDSA, key}, opts)
-	if err != nil {
-		t.Error("Failed to create signer")
-	}
-
-	if !reflect.DeepEqual(*opts, sig.Options()) {
-		t.Error("Signer options do not match")
 	}
 }
 

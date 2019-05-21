@@ -18,9 +18,9 @@ package josecipher
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"encoding/base64"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
 	"math/big"
 	"testing"
 )
