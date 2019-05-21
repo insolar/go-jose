@@ -17,13 +17,13 @@
 package jose
 
 import (
-	"crypto/ecdsa"
-	"crypto/rsa"
 	"errors"
 	"fmt"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/rsa"
 	"reflect"
 
-	"gopkg.in/square/go-jose.v2/json"
+	"github.com/go-jose/json"
 )
 
 // Encrypter represents an encrypter which produces an encrypted JWE object.

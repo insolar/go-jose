@@ -20,16 +20,14 @@
 package cryptosigner
 
 import (
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/rsa"
 	"encoding/asn1"
+	"github.com/go-jose"
+	"github.com/insolar/x-crypto"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
 	"io"
 	"math/big"
-
-	"golang.org/x/crypto/ed25519"
-	"gopkg.in/square/go-jose.v2"
 )
 
 // Opaque creates an OpaqueSigner from a "crypto".Signer
@@ -52,11 +50,9 @@ func (s *cryptoSigner) Public() *jose.JSONWebKey {
 
 func (s *cryptoSigner) Algs() []jose.SignatureAlgorithm {
 	switch s.signer.Public().(type) {
-	case ed25519.PublicKey:
-		return []jose.SignatureAlgorithm{jose.EdDSA}
 	case *ecdsa.PublicKey:
 		// This could be more precise
-		return []jose.SignatureAlgorithm{jose.ES256, jose.ES384, jose.ES512}
+		return []jose.SignatureAlgorithm{jose.ES256, jose.ES256K, jose.ES384, jose.ES512}
 	case *rsa.PublicKey:
 		return []jose.SignatureAlgorithm{jose.RS256, jose.RS384, jose.RS512, jose.PS256, jose.PS384, jose.PS512}
 	default:
@@ -67,8 +63,7 @@ func (s *cryptoSigner) Algs() []jose.SignatureAlgorithm {
 func (s *cryptoSigner) SignPayload(payload []byte, alg jose.SignatureAlgorithm) ([]byte, error) {
 	var hash crypto.Hash
 	switch alg {
-	case jose.EdDSA:
-	case jose.RS256, jose.PS256, jose.ES256:
+	case jose.RS256, jose.PS256, jose.ES256, jose.ES256K:
 		hash = crypto.SHA256
 	case jose.RS384, jose.PS384, jose.ES384:
 		hash = crypto.SHA384
@@ -92,12 +87,12 @@ func (s *cryptoSigner) SignPayload(payload []byte, alg jose.SignatureAlgorithm) 
 		err error
 	)
 	switch alg {
-	case jose.EdDSA:
-		out, err = s.signer.Sign(s.rand, payload, crypto.Hash(0))
-	case jose.ES256, jose.ES384, jose.ES512:
+	case jose.ES256, jose.ES256K, jose.ES384, jose.ES512:
 		var byteLen int
 		switch alg {
 		case jose.ES256:
+			byteLen = 32
+		case jose.ES256K:
 			byteLen = 32
 		case jose.ES384:
 			byteLen = 48

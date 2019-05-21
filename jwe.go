@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/square/go-jose.v2/json"
+	"github.com/go-jose/json"
 )
 
 // rawJSONWebEncryption represents a raw JWE JSON object. Used for parsing/serializing.
@@ -89,7 +89,7 @@ func (obj JSONWebEncryption) computeAuthData() []byte {
 	if obj.original != nil && obj.original.Protected != nil {
 		protected = obj.original.Protected.base64()
 	} else if obj.protected != nil {
-		protected = base64.RawURLEncoding.EncodeToString(mustSerializeJSON((obj.protected)))
+		protected = base64.RawURLEncoding.EncodeToString(mustSerializeJSON(obj.protected))
 	} else {
 		protected = ""
 	}

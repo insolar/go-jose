@@ -17,52 +17,14 @@
 package jose
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
 	"errors"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
 	"io"
 	"testing"
 )
-
-func TestEd25519(t *testing.T) {
-	_, err := newEd25519Signer("XYZ", nil)
-	if err != ErrUnsupportedAlgorithm {
-		t.Error("should return error on invalid algorithm")
-	}
-
-	enc := new(edEncrypterVerifier)
-	enc.publicKey = ed25519PublicKey
-	err = enc.verifyPayload([]byte{}, []byte{}, "XYZ")
-	if err != ErrUnsupportedAlgorithm {
-		t.Error("should return error on invalid algorithm")
-	}
-
-	dec := new(edDecrypterSigner)
-	dec.privateKey = ed25519PrivateKey
-	_, err = dec.signPayload([]byte{}, "XYZ")
-	if err != ErrUnsupportedAlgorithm {
-		t.Error("should return error on invalid algorithm")
-	}
-
-	sig, err := dec.signPayload([]byte("This is a test"), "EdDSA")
-	if err != nil {
-		t.Error("should not error trying to sign payload")
-	}
-	if sig.Signature == nil {
-		t.Error("Check the signature")
-	}
-	err = enc.verifyPayload([]byte("This is a test"), sig.Signature, "EdDSA")
-	if err != nil {
-		t.Error("should not error trying to verify payload")
-	}
-
-	err = enc.verifyPayload([]byte("This is test number 2"), sig.Signature, "EdDSA")
-	if err == nil {
-		t.Error("should not error trying to verify payload")
-	}
-}
 
 func TestInvalidAlgorithmsRSA(t *testing.T) {
 	_, err := newRSARecipient("XYZ", nil)

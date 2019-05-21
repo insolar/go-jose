@@ -18,20 +18,18 @@ package cryptosigner
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
+	"github.com/go-jose"
+	"github.com/insolar/x-crypto"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
 	"testing"
-
-	"golang.org/x/crypto/ed25519"
-	"gopkg.in/square/go-jose.v2"
 )
 
 func TestRoundtripsJWSCryptoSigner(t *testing.T) {
-	sigAlgs := []jose.SignatureAlgorithm{jose.RS256, jose.RS384, jose.RS512, jose.PS256, jose.PS384, jose.PS512, jose.ES256, jose.ES384, jose.ES512, jose.EdDSA}
+	sigAlgs := []jose.SignatureAlgorithm{jose.RS256, jose.RS384, jose.RS512, jose.PS256, jose.PS384, jose.PS512, jose.ES256, jose.ES256K, jose.ES384, jose.ES512}
 
 	serializers := []func(*jose.JSONWebSignature) (string, error){
 		func(obj *jose.JSONWebSignature) (string, error) { return obj.CompactSerialize() },
@@ -112,14 +110,16 @@ func roundtripJWS(sigAlg jose.SignatureAlgorithm, serializer func(*jose.JSONWebS
 
 func generateSigningTestKey(sigAlg jose.SignatureAlgorithm) (sig, ver interface{}) {
 	switch sigAlg {
-	case jose.EdDSA:
-		ver, sig, _ = ed25519.GenerateKey(rand.Reader)
 	case jose.RS256, jose.RS384, jose.RS512, jose.PS256, jose.PS384, jose.PS512:
 		rsaTestKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 		sig = rsaTestKey
 		ver = &rsaTestKey.PublicKey
 	case jose.ES256:
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		sig = key
+		ver = &key.PublicKey
+	case jose.ES256K:
+		key, _ := ecdsa.GenerateKey(elliptic.P256K(), rand.Reader)
 		sig = key
 		ver = &key.PublicKey
 	case jose.ES384:

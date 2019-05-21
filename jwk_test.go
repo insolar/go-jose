@@ -18,21 +18,18 @@ package jose
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/hex"
+	"github.com/insolar/x-crypto"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/rsa"
+	"github.com/insolar/x-crypto/x509"
 	"math/big"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/ed25519"
-
-	"gopkg.in/square/go-jose.v2/json"
+	"github.com/go-jose/json"
 )
 
 // Test chain of two X.509 certificates
@@ -79,10 +76,14 @@ mZSDxthLu3UMl98NA2NrCGWwzJwpk36vQ0PRSbibsCMarFspP8zbIoU=`))
 
 func TestCurveSize(t *testing.T) {
 	size256 := curveSize(elliptic.P256())
+	size256K := curveSize(elliptic.P256K())
 	size384 := curveSize(elliptic.P384())
 	size521 := curveSize(elliptic.P521())
 	if size256 != 32 {
 		t.Error("P-256 have 32 bytes")
+	}
+	if size256K != 32 {
+		t.Error("P-256K have 32 bytes")
 	}
 	if size384 != 48 {
 		t.Error("P-384 have 48 bytes")
@@ -196,7 +197,7 @@ func TestRsaPrivateExcessPrimes(t *testing.T) {
 }
 
 func TestRoundtripEcPublic(t *testing.T) {
-	for i, ecTestKey := range []*ecdsa.PrivateKey{ecTestKey256, ecTestKey384, ecTestKey521} {
+	for i, ecTestKey := range []*ecdsa.PrivateKey{ecTestKey256, ecTestKey256k, ecTestKey384, ecTestKey521} {
 		jwk, err := fromEcPublicKey(&ecTestKey.PublicKey)
 
 		ec2, err := jwk.ecPublicKey()
@@ -217,7 +218,7 @@ func TestRoundtripEcPublic(t *testing.T) {
 }
 
 func TestRoundtripEcPrivate(t *testing.T) {
-	for i, ecTestKey := range []*ecdsa.PrivateKey{ecTestKey256, ecTestKey384, ecTestKey521} {
+	for i, ecTestKey := range []*ecdsa.PrivateKey{ecTestKey256, ecTestKey256k, ecTestKey384, ecTestKey521} {
 		jwk, err := fromEcPrivateKey(ecTestKey)
 
 		ec2, err := jwk.ecPrivateKey()
@@ -275,7 +276,7 @@ func TestRoundtripX5C(t *testing.T) {
 func TestMarshalUnmarshal(t *testing.T) {
 	kid := "DEADBEEF"
 
-	for i, key := range []interface{}{ecTestKey256, ecTestKey384, ecTestKey521, rsaTestKey, ed25519PrivateKey} {
+	for i, key := range []interface{}{ecTestKey256, ecTestKey256k, ecTestKey384, ecTestKey521, rsaTestKey} {
 		for _, use := range []string{"", "sig", "enc"} {
 			jwk := JSONWebKey{Key: key, KeyID: kid, Algorithm: "foo"}
 			if use != "" {
@@ -396,6 +397,56 @@ func TestMarshalUnmarshalInvalid(t *testing.T) {
 	}
 }
 
+func TestMarshalUnmarshalInvalidK(t *testing.T) {
+	// Make an invalid curve coordinate by creating a byte array that is one
+	// byte too large, and setting the first byte to 1 (otherwise it's just zero).
+	invalidCoord := make([]byte, curveSize(ecTestKey256k.Curve)+1)
+	invalidCoord[0] = 1
+
+	keys := []interface{}{
+		// Empty keys
+		&rsa.PrivateKey{},
+		&ecdsa.PrivateKey{},
+		// Invalid keys
+		&ecdsa.PrivateKey{
+			PublicKey: ecdsa.PublicKey{
+				// Missing values in pub key
+				Curve: elliptic.P256K(),
+			},
+		},
+		&ecdsa.PrivateKey{
+			PublicKey: ecdsa.PublicKey{
+				// Invalid curve
+				Curve: nil,
+				X:     ecTestKey256k.X,
+				Y:     ecTestKey256k.Y,
+			},
+		},
+		&ecdsa.PrivateKey{
+			// Valid pub key, but missing priv key values
+			PublicKey: ecTestKey256k.PublicKey,
+		},
+		&ecdsa.PrivateKey{
+			// Invalid pub key, values too large
+			PublicKey: ecdsa.PublicKey{
+				Curve: ecTestKey256k.Curve,
+				X:     big.NewInt(0).SetBytes(invalidCoord),
+				Y:     big.NewInt(0).SetBytes(invalidCoord),
+			},
+			D: ecTestKey256k.D,
+		},
+		nil,
+	}
+
+	for i, key := range keys {
+		jwk := JSONWebKey{Key: key}
+		_, err := jwk.MarshalJSON()
+		if err == nil {
+			t.Error("managed to serialize invalid key", i)
+		}
+	}
+}
+
 func TestWebKeyVectorsInvalid(t *testing.T) {
 	keys := []string{
 		// Invalid JSON
@@ -410,9 +461,12 @@ func TestWebKeyVectorsInvalid(t *testing.T) {
 		// Invalid EC keys
 		`{"kty":"EC","crv":"ABC"}`,
 		`{"kty":"EC","crv":"P-256"}`,
+		`{"kty":"EC","crv":"P-256K"}`,
 		`{"kty":"EC","crv":"P-256","d":"XXX"}`,
+		`{"kty":"EC","crv":"P-256K","d":"XXX"}`,
 		`{"kty":"EC","crv":"ABC","d":"dGVzdA","x":"dGVzdA"}`,
 		`{"kty":"EC","crv":"P-256","d":"dGVzdA","x":"dGVzdA"}`,
+		`{"kty":"EC","crv":"P-256K","d":"dGVzdA","x":"dGVzdA"}`,
 	}
 
 	for _, key := range keys {
@@ -436,14 +490,6 @@ var cookbookJWKs = []string{
          A5RkTKqjqvjyekWF-7ytDyRXYgCF5cj0Kt",
      "y": "AdymlHvOiLxXkEhayXQnNCvDX4h9htZaCJN34kfmC6pV5OhQHiraVy
          SsUdaQkAgDPrwQrJmbnX9cwlGfP-HqHZR1"
-   }`),
-
-	//ED Private
-	stripWhitespace(`{
-     "kty": "OKP",
-     "crv": "Ed25519",
-     "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
-     "d": "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A"
    }`),
 
 	// EC Private
@@ -559,20 +605,6 @@ func TestWebKeyVectorsValid(t *testing.T) {
 			t.Error("unable to parse valid key:", key, err)
 		}
 	}
-}
-
-func TestEd25519Serialization(t *testing.T) {
-	jwk := JSONWebKey{
-		Key: ed25519PrivateKey,
-	}
-	serialized, _ := json.Marshal(jwk)
-
-	var jwk2 JSONWebKey
-	json.Unmarshal(serialized, &jwk2)
-
-	assert.True(t, bytes.Equal(
-		[]byte(jwk.Key.(ed25519.PrivateKey).Public().(ed25519.PublicKey)),
-		[]byte(jwk2.Key.(ed25519.PrivateKey).Public().(ed25519.PublicKey))))
 }
 
 func TestThumbprint(t *testing.T) {
@@ -709,8 +741,29 @@ func TestJWKIsPublic(t *testing.T) {
 		{&ecdsa.PrivateKey{eccPub, bigInt}, false},
 		{&rsaPub, true},
 		{&rsa.PrivateKey{rsaPub, bigInt, []*big.Int{bigInt, bigInt}, rsa.PrecomputedValues{}}, false},
-		{ed25519PublicKey, true},
-		{ed25519PrivateKey, false},
+	}
+
+	for _, tc := range cases {
+		k := &JSONWebKey{Key: tc.key}
+		if public := k.IsPublic(); public != tc.expectedIsPublic {
+			t.Errorf("expected IsPublic to return %t, got %t", tc.expectedIsPublic, public)
+		}
+	}
+}
+
+func TestJWKIsPublicK(t *testing.T) {
+	bigInt := big.NewInt(0)
+	eccPub := ecdsa.PublicKey{elliptic.P256K(), bigInt, bigInt}
+	rsaPub := rsa.PublicKey{bigInt, 1}
+
+	cases := []struct {
+		key              interface{}
+		expectedIsPublic bool
+	}{
+		{&eccPub, true},
+		{&ecdsa.PrivateKey{eccPub, bigInt}, false},
+		{&rsaPub, true},
+		{&rsa.PrivateKey{rsaPub, bigInt, []*big.Int{bigInt, bigInt}, rsa.PrecomputedValues{}}, false},
 	}
 
 	for _, tc := range cases {
@@ -725,8 +778,6 @@ func TestJWKValid(t *testing.T) {
 	bigInt := big.NewInt(0)
 	eccPub := ecdsa.PublicKey{elliptic.P256(), bigInt, bigInt}
 	rsaPub := rsa.PublicKey{bigInt, 1}
-	edPubEmpty := ed25519.PublicKey([]byte{})
-	edPrivEmpty := ed25519.PublicKey([]byte{})
 
 	cases := []struct {
 		key              interface{}
@@ -741,10 +792,45 @@ func TestJWKValid(t *testing.T) {
 		{&rsaPub, true},
 		{&rsa.PrivateKey{}, false},
 		{&rsa.PrivateKey{rsaPub, bigInt, []*big.Int{bigInt, bigInt}, rsa.PrecomputedValues{}}, true},
-		{ed25519PublicKey, true},
-		{ed25519PrivateKey, true},
-		{edPubEmpty, false},
-		{edPrivEmpty, false},
+	}
+
+	for _, tc := range cases {
+		k := &JSONWebKey{Key: tc.key}
+		valid := k.Valid()
+		if valid != tc.expectedValidity {
+			t.Errorf("expected Valid to return %t, got %t", tc.expectedValidity, valid)
+		}
+		if valid {
+			wasPublic := k.IsPublic()
+			p := k.Public() // all aforemention keys are asymmetric
+			if !p.Valid() {
+				t.Errorf("unable to derive public key from valid asymmetric key")
+			}
+			if wasPublic != k.IsPublic() {
+				t.Errorf("original key was touched during public key derivation")
+			}
+		}
+	}
+}
+
+func TestJWKValidK(t *testing.T) {
+	bigInt := big.NewInt(0)
+	eccPub := ecdsa.PublicKey{elliptic.P256K(), bigInt, bigInt}
+	rsaPub := rsa.PublicKey{bigInt, 1}
+
+	cases := []struct {
+		key              interface{}
+		expectedValidity bool
+	}{
+		{nil, false},
+		{&ecdsa.PublicKey{}, false},
+		{&eccPub, true},
+		{&ecdsa.PrivateKey{}, false},
+		{&ecdsa.PrivateKey{eccPub, bigInt}, true},
+		{&rsa.PublicKey{}, false},
+		{&rsaPub, true},
+		{&rsa.PrivateKey{}, false},
+		{&rsa.PrivateKey{rsaPub, bigInt, []*big.Int{bigInt, bigInt}, rsa.PrecomputedValues{}}, true},
 	}
 
 	for _, tc := range cases {
