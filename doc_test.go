@@ -17,10 +17,10 @@
 package jose
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
 )
 
 // Dummy encrypter for use in examples

@@ -18,10 +18,10 @@ package jose
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rsa"
-	"crypto/x509"
+	"github.com/insolar/x-crypto/ecdsa"
+	"github.com/insolar/x-crypto/elliptic"
+	"github.com/insolar/x-crypto/rsa"
+	"github.com/insolar/x-crypto/x509"
 	"math/big"
 	"regexp"
 	"testing"
