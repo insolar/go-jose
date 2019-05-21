@@ -19,11 +19,11 @@ package jwt_test
 
 import (
 	"fmt"
+	"github.com/insolar/x-crypto/rsa"
+	"github.com/insolar/x-crypto/x509"
 	"strings"
 	"time"
 
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/pem"
 
 	"github.com/go-jose"

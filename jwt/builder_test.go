@@ -18,13 +18,13 @@
 package jwt
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/insolar/x-crypto/rand"
+	"github.com/insolar/x-crypto/rsa"
+	"github.com/insolar/x-crypto/x509"
 	"io"
 	"reflect"
 	"sort"
@@ -432,8 +432,6 @@ func mustUnmarshalRSA(data string) *rsa.PrivateKey {
 }
 
 func mustMakeSigner(alg jose.SignatureAlgorithm, k interface{}) jose.Signer {
-	fmt.Println("+++alg", alg)
-	fmt.Println("Key ", k)
 	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: k}, (&jose.SignerOptions{}).WithType("JWT"))
 	if err != nil {
 		panic("failed to create signer:" + err.Error())

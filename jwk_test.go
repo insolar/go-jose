@@ -19,6 +19,7 @@ package jose
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"github.com/insolar/x-crypto"
 	"github.com/insolar/x-crypto/ecdsa"
 	"github.com/insolar/x-crypto/elliptic"
@@ -590,7 +591,6 @@ var cookbookJWKs = []string{
 // SHA-256 thumbprints of the above keys, hex-encoded
 var cookbookJWKThumbprints = []string{
 	"747ae2dd2003664aeeb21e4753fe7402846170a16bc8df8f23a8cf06d3cbe793",
-	"f6934029a341ddf81dceb753e91d17efe16664f40d9f4ed84bc5ea87e111f29d",
 	"747ae2dd2003664aeeb21e4753fe7402846170a16bc8df8f23a8cf06d3cbe793",
 	"f63838e96077ad1fc01c3f8405774dedc0641f558ebb4b40dccf5f9b6d66a932",
 	"0fc478f8579325fcee0d4cbc6d9d1ce21730a6e97e435d6008fb379b0ebe47d4",
@@ -622,6 +622,7 @@ func TestThumbprint(t *testing.T) {
 
 		tpHex := hex.EncodeToString(tp)
 		if cookbookJWKThumbprints[i] != tpHex {
+			fmt.Println(i, cookbookJWKThumbprints[i], tpHex)
 			t.Error("incorrect thumbprint:", i, cookbookJWKThumbprints[i], tpHex)
 		}
 	}
