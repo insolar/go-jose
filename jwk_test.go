@@ -201,7 +201,7 @@ func TestRoundtripEcPublic(t *testing.T) {
 	for i, ecTestKey := range []*ecdsa.PrivateKey{ecTestKey256, ecTestKey256k, ecTestKey384, ecTestKey521} {
 		jwk, err := fromEcPublicKey(&ecTestKey.PublicKey)
 
-		ec2, err := jwk.ecPublicKey()
+		ec2, err := jwk.EcPublicKey()
 		if err != nil {
 			t.Error("problem converting ECDSA private -> JWK", i, err)
 		}
