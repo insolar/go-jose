@@ -26,8 +26,8 @@ import (
 
 	"encoding/pem"
 
-	"github.com/go-jose"
-	"github.com/go-jose/jwt"
+	"github.com/insolar/go-jose"
+	"github.com/insolar/go-jose/jwt"
 )
 
 var sharedKey = []byte("secret")

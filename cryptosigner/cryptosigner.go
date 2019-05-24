@@ -21,7 +21,7 @@ package cryptosigner
 
 import (
 	"encoding/asn1"
-	"github.com/go-jose"
+	"github.com/insolar/go-jose"
 	"github.com/insolar/x-crypto"
 	"github.com/insolar/x-crypto/ecdsa"
 	"github.com/insolar/x-crypto/rand"

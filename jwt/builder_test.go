@@ -34,8 +34,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/go-jose"
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose"
+	"github.com/insolar/go-jose/json"
 )
 
 type testClaims struct {

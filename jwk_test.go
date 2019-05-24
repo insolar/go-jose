@@ -30,7 +30,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/json"
 )
 
 // Test chain of two X.509 certificates

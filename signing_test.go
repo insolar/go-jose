@@ -26,7 +26,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/json"
 )
 
 type staticNonceSource string

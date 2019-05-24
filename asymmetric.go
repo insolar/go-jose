@@ -28,8 +28,8 @@ import (
 	"github.com/insolar/x-crypto/sha256"
 	"math/big"
 
-	"github.com/go-jose/cipher"
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/cipher"
+	"github.com/insolar/go-jose/json"
 )
 
 // A generic RSA-based encrypter/verifier

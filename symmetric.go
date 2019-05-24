@@ -30,7 +30,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/go-jose/cipher"
+	"github.com/insolar/go-jose/cipher"
 	"golang.org/x/crypto/pbkdf2"
 )
 

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-jose"
+	"github.com/insolar/go-jose"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/json"
 	"github.com/insolar/x-crypto/ecdsa"
 	"github.com/insolar/x-crypto/rsa"
 )

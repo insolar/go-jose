@@ -23,7 +23,7 @@ import (
 	"github.com/insolar/x-crypto/rsa"
 	"reflect"
 
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/json"
 )
 
 // Encrypter represents an encrypter which produces an encrypted JWE object.

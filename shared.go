@@ -23,7 +23,7 @@ import (
 	"github.com/insolar/x-crypto/elliptic"
 	"github.com/insolar/x-crypto/x509"
 
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/json"
 )
 
 // KeyAlgorithm represents a key management algorithm.

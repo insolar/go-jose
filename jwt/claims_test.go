@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-jose/json"
+	"github.com/insolar/go-jose/json"
 
 	"github.com/stretchr/testify/assert"
 )
